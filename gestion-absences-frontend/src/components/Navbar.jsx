@@ -20,7 +20,7 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   return (
-    <div className="border-b bg-green-400 sticky top-0 z-10">
+    <div className="border-b bg-orange-500 font-bold sticky top-0 z-10">
       <div className="max-w-7xl mx-auto flex items-center justify-between p-3">
         <Link to="/" className="text-lg font-semibold">Gestion Absences</Link>
         {token ? (
