@@ -10,6 +10,8 @@ import entitiesConfig from './config/entities'
 import React from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EtudiantsParClasse from "./pages/EtudiantsParClasse";
+import GestionManuelleEDT from './pages/GestionManuelleEDT'
+import EmploiDuTempsTable from './pages/EmploiDuTempsTable'
 
 
 function Protected({ children }) {
@@ -48,6 +50,30 @@ export default function App() {
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/gestion-edt"
+            element={
+              <Protected>
+                <GestionManuelleEDT />
+              </Protected>
+            }
+          />
+          <Route
+            path="/emploi-du-temps-table"
+            element={
+              <Protected>
+                <EmploiDuTempsTable />
+              </Protected>
+            }
+          />
+          <Route
+            path="/emploi-du-temps-table"
+            element={
+              <Protected>
+                <EmploiDuTempsTable/>
+              </Protected>
+            }
+          />
         </Routes>
       </div>
     </div>

@@ -38,7 +38,13 @@ export default function Navbar() {
             <NavItem to="/salles">Salles</NavItem>
             <NavItem to="/cours">Cours</NavItem>
             <NavItem to="/seances">Séances</NavItem>
-            <NavItem to="/edt">EDT</NavItem>
+            {/* <NavItem to="/edt">EDT</NavItem>
+            <NavItem to="/emploi-du-temps-table">Emploi du Temps</NavItem> */}
+            <NavItem to="/edt">Génération EDT</NavItem>
+            <NavItem to="/emploi-du-temps-table">Visualisation EDT</NavItem>
+            <NavItem to="/gestion-edt">Gestion Manuel EDT</NavItem>
+            <NavItem to="/emploi-du-temps-table">Emploi du Temps</NavItem>
+
             <div className="ml-3 text-sm text-gray-600 hidden md:block">{user?.nomComplet} · {user?.role}</div>
             <button className="btn" onClick={() => { logout(); navigate('/login') }}>Se déconnecter</button>
           </div>
