@@ -7,7 +7,7 @@ const NavItem = ({ to, children, onClick }) => (
     to={to}
     onClick={onClick}
     className={({ isActive }) =>
-      `px-3 py-2 rounded-xl text-sm transition-colors ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-blue-500/20 text-blue-900'}`
+      `px-3 py-2 rounded-xl text-sm transition-colors font-bold ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-blue-500/20 text-blue-900'}`
     }
   >
     {children}
@@ -53,7 +53,7 @@ const DropdownMenu = ({ title, items }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <button className="px-3 py-2 rounded-xl text-sm text-blue-900 hover:bg-blue-500/20 transition-colors flex items-center gap-1">
+      <button className="px-3 py-2 rounded-xl text-sm text-blue-900 hover:bg-blue-500/20 transition-colors flex items-center gap-1 font-bold">
         {title}
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -70,7 +70,7 @@ const DropdownMenu = ({ title, items }) => {
             <NavLink
               key={index}
               to={item.to}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-bold"
               onClick={() => setIsOpen(false)}
             >
               {item.label}
@@ -88,7 +88,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const edtItems = [
-    { to: "/edt", label: "Génération EDT" },
+    // { to: "/edt", label: "Génération EDT" },
     { to: "/emploi-du-temps-table", label: "Visualisation EDT" },
     { to: "/gestion-edt", label: "Gestion Manuel EDT" }
   ];
@@ -113,7 +113,7 @@ export default function Navbar() {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">GA</span>
             </div>
-            <span className="text-lg font-semibold text-white hidden sm:block">Gestion Absences</span>
+            <span className="text-lg font-semibold text-white hidden sm:block font-bold">Gestion Absences</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -128,11 +128,11 @@ export default function Navbar() {
               {/* User info and logout */}
               <div className="ml-4 flex items-center gap-3 border-l border-orange-400 pl-4">
                 <div className="text-sm text-white">
-                  <div className="font-medium">{user?.nomComplet}</div>
-                  <div className="text-xs text-white/80 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</div>
+                  <div className="font-bold">{user?.nomComplet}</div>
+                  <div className="text-xs text-white/80 capitalize font-bold">{user?.role?.toLowerCase().replace('_', ' ')}</div>
                 </div>
                 <button 
-                  className="btn btn-outline text-sm bg-white text-orange-600 hover:bg-gray-100 border-white"
+                  className="btn btn-outline text-sm bg-white text-orange-600 hover:bg-gray-100 border-white font-bold"
                   onClick={() => { logout(); navigate('/login') }}
                 >
                   Déconnexion
@@ -149,7 +149,7 @@ export default function Navbar() {
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-white hover:bg-orange-600"
+              className="p-2 rounded-lg text-white hover:bg-orange-600 font-bold"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
@@ -164,24 +164,24 @@ export default function Navbar() {
             <div className="space-y-2">
               {token ? (
                 <>
-                  <div className="px-3 py-2 font-semibold text-white/80 text-xs uppercase">Gestion</div>
+                  <div className="px-3 py-2 font-bold text-white/80 text-xs uppercase">Gestion</div>
                   {gestionItems.map((item, index) => (
                     <NavLink
                       key={index}
                       to={item.to}
-                      className="block px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors"
+                      className="block px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors font-bold"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
                     </NavLink>
                   ))}
                   
-                  <div className="px-3 py-2 font-semibold text-white/80 text-xs uppercase mt-4">Emploi du Temps</div>
+                  <div className="px-3 py-2 font-bold text-white/80 text-xs uppercase mt-4">Emploi du Temps</div>
                   {edtItems.map((item, index) => (
                     <NavLink
                       key={index}
                       to={item.to}
-                      className="block px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors"
+                      className="block px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors font-bold"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
@@ -189,11 +189,11 @@ export default function Navbar() {
                   ))}
 
                   <div className="border-t border-orange-400 mt-4 pt-4">
-                    <div className="px-3 py-2 text-sm text-white">
+                    <div className="px-3 py-2 text-sm text-white font-bold">
                       Connecté en tant que <strong>{user?.nomComplet}</strong>
                     </div>
                     <button 
-                      className="w-full text-left px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors"
+                      className="w-full text-left px-3 py-2 rounded-lg text-white hover:bg-orange-600 transition-colors font-bold"
                       onClick={() => { logout(); navigate('/login'); setMobileMenuOpen(false); }}
                     >
                       Se déconnecter

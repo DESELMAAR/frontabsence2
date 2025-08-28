@@ -133,7 +133,7 @@ export default function GestionManuelleEDT() {
         <h1 className="title">Gestion Manuelle des Emplois du Temps</h1>
         {isAdmin && (
           <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-            + Nouvel EDT
+            + Nouvel Emploi Du Temps
           </button>
         )}
       </div>

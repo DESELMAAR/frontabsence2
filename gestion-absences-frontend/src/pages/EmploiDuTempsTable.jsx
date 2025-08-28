@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import deleteIcon from '../delete.svg';
+import { Link } from 'react-router-dom';
 
 export default function EmploiDuTempsTable() {
   const { user } = useAuth();
@@ -17,7 +18,13 @@ export default function EmploiDuTempsTable() {
   const [professeurs, setProfesseurs] = useState([]);
   const [salles, setSalles] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState({ day: null, timeSlot: null });
-  const [duplicateChoice, setDuplicateChoice] = useState('new'); // 'new' ou 'duplicate'
+  const [duplicateChoice, setDuplicateChoice] = useState('new'); // 'new' | 'duplicate'
+
+  // Nouveaux états pour la disponibilité
+  const [availableProfesseurs, setAvailableProfesseurs] = useState([]);
+  const [availableSalles, setAvailableSalles] = useState([]);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availError, setAvailError] = useState(null);
 
   // Formulaire ajout séance
   const [newSeance, setNewSeance] = useState({
@@ -74,7 +81,6 @@ export default function EmploiDuTempsTable() {
 
   const loadReferences = async () => {
     try {
-      // 1er essai : ne charger que les cours de la classe
       let coursData = [];
       if (selectedClass?.id) {
         const { data } = await api.get(`/api/cours/by-classe/${selectedClass.id}`);
@@ -84,18 +90,14 @@ export default function EmploiDuTempsTable() {
         coursData = Array.isArray(data) ? data : [];
       }
 
-      // Fallback: si vide, on tente /api/cours (certains back renvoient vide tant que pas d'association)
       if ((!coursData || coursData.length === 0) && selectedClass?.id) {
         const { data: all } = await api.get('/api/cours');
-        coursData = Array.isArray(all) ? all.filter(c =>
-          Array.isArray(c.classes) && c.classes.some(cl => cl.id === selectedClass.id)
-        ) : [];
+        coursData = Array.isArray(all)
+          ? all.filter((c) => Array.isArray(c.classes) && c.classes.some((cl) => cl.id === selectedClass.id))
+          : [];
       }
 
-      const [professeursRes, sallesRes] = await Promise.all([
-        api.get('/api/professeurs'),
-        api.get('/api/salles')
-      ]);
+      const [professeursRes, sallesRes] = await Promise.all([api.get('/api/professeurs'), api.get('/api/salles')]);
 
       setCours(coursData);
       setProfesseurs(professeursRes.data || []);
@@ -108,21 +110,31 @@ export default function EmploiDuTempsTable() {
     }
   };
 
+  // 88888888888888888888888
+
+  const displayProf = (p) =>
+    [p?.nom, p?.prenom].filter(Boolean).join(' ').trim() || p?.email || `#${p?.id}`;
+
+  const displaySalle = (s) =>
+    s?.code || [s?.batiment, s?.numero].filter(Boolean).join('-') || `Salle #${s?.id}`;
+
+  // Listes triées pour un rendu propre
+  const sortedAvailableProfesseurs = useMemo(
+    () => [...availableProfesseurs].sort((a, b) => displayProf(a).localeCompare(displayProf(b), 'fr')),
+    [availableProfesseurs]
+  );
+
+  const sortedAvailableSalles = useMemo(
+    () => [...availableSalles].sort((a, b) => displaySalle(a).localeCompare(displaySalle(b), 'fr')),
+    [availableSalles]
+  );
+  // 888888888888888888888888
   // ----- SCHEDULE ORGANIZATION -----
   const organizeSchedule = () => {
     if (!edt || !edt.seances) return { days: [], timeSlots: [], schedule: {} };
 
     const daysOfWeek = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
-    const timeSlots = [
-      '08:00-09:00',
-      '09:00-10:00',
-      '10:00-11:00',
-      '11:00-12:00',
-      '14:00-15:00',
-      '15:00-16:00',
-      '16:00-17:00',
-      '17:00-18:00',
-    ];
+    const timeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00'];
 
     const schedule = {};
     daysOfWeek.forEach((day) => {
@@ -162,12 +174,11 @@ export default function EmploiDuTempsTable() {
 
   // ----- MERGE PLAN (rowspan) -----
   const mergePlan = useMemo(() => {
-    // mergePlan[day][slot] = { rowSpan: number, hidden: bool }
     const plan = {};
     if (!days.length) return plan;
 
-    const endOf = (slot) => slot.split('-')[1]; // "08:00-09:00" -> "09:00"
-    const startOf = (slot) => slot.split('-')[0]; // "08:00-09:00" -> "08:00"
+    const endOf = (slot) => slot.split('-')[1];
+    const startOf = (slot) => slot.split('-')[0];
 
     days.forEach((day) => {
       plan[day] = {};
@@ -187,8 +198,6 @@ export default function EmploiDuTempsTable() {
         let span = 1;
         let cursor = r;
 
-        // Fusion uniquement si le créneau suivant est CONTIGU
-        // et que cours/prof/salle sont identiques pair-à-pair
         while (cursor + 1 < timeSlots.length) {
           const currSlot = timeSlots[cursor];
           const nextSlot = timeSlots[cursor + 1];
@@ -198,7 +207,6 @@ export default function EmploiDuTempsTable() {
           if (!currCell || !nextCell) break;
 
           const contiguous = endOf(currSlot) === startOf(nextSlot);
-
           const sameIdentity =
             (currCell.raw?.cours?.id || null) === (nextCell.raw?.cours?.id || null) &&
             (currCell.raw?.professeur?.id || null) === (nextCell.raw?.professeur?.id || null) &&
@@ -229,16 +237,87 @@ export default function EmploiDuTempsTable() {
     if (Array.isArray(c.classes) && c.classes.length) {
       return c.classes.some((cl) => cl.id === selectedClass.id);
     }
-    // Si l'API `/by-classe/:id` est utilisée, on considère que c'est déjà filtré
     return true;
   };
+
+  // ---------- DISPONIBILITÉ (API + fallback local) ----------
+  const normalizeTime = (t) => (t?.length === 5 ? `${t}:00` : t || '');
+  const timeToMinutes = (t) => {
+    const [h, m] = (t || '00:00:00').split(':').map(Number);
+    return h * 60 + m;
+    // (ignore seconds)
+  };
+  const overlaps = (startA, endA, startB, endB) => {
+    const a1 = timeToMinutes(normalizeTime(startA));
+    const a2 = timeToMinutes(normalizeTime(endA));
+    const b1 = timeToMinutes(normalizeTime(startB));
+    const b2 = timeToMinutes(normalizeTime(endB));
+    return a1 < b2 && a2 > b1;
+  };
+
+  // Fallback local basé sur l'EDT courant (même jour + chevauchement)
+  const computeLocalAvailability = (dateISO, start, end) => {
+    if (!edt?.seances?.length) {
+      return { profs: professeurs, rooms: salles, source: 'local:empty' };
+    }
+    const dayStr = new Date(dateISO).toISOString().split('T')[0];
+    const sameDaySeances = edt.seances.filter((s) => (s.date || '').startsWith(dayStr));
+
+    const busyProfIds = new Set();
+    const busySalleIds = new Set();
+    sameDaySeances.forEach((s) => {
+      if (overlaps(start, end, s.heureDebut, s.heureFin)) {
+        if (s.professeur?.id) busyProfIds.add(s.professeur.id);
+        if (s.salle?.id) busySalleIds.add(s.salle.id);
+      }
+    });
+
+    const profs = (professeurs || []).filter((p) => !busyProfIds.has(p.id));
+    const rooms = (salles || []).filter((r) => !busySalleIds.has(r.id));
+    return { profs, rooms, source: 'local' };
+  };
+
+  const fetchAvailability = async (dateISO, startTime, endTime) => {
+    if (!dateISO || !startTime || !endTime) {
+      setAvailableProfesseurs([]);
+      setAvailableSalles([]);
+      setAvailError(null);
+      return;
+    }
+    setAvailLoading(true);
+    setAvailError(null);
+    try {
+      // Essaye endpoints "officiels" si tu les as côté back
+      const [pRes, sRes] = await Promise.all([
+        api.get('/api/professeurs/available', { params: { date: dateISO, start: normalizeTime(startTime), end: normalizeTime(endTime) } }),
+        api.get('/api/salles/available', { params: { date: dateISO, start: normalizeTime(startTime), end: normalizeTime(endTime) } }),
+      ]);
+      setAvailableProfesseurs(Array.isArray(pRes.data) ? pRes.data : []);
+      setAvailableSalles(Array.isArray(sRes.data) ? sRes.data : []);
+    } catch (err) {
+      // Fallback local si endpoints non présents (404) / erreur → calcule depuis EDT courant
+      const { profs, rooms } = computeLocalAvailability(dateISO, startTime, endTime);
+      setAvailableProfesseurs(profs);
+      setAvailableSalles(rooms);
+      setAvailError(null); // on ne montre pas d'erreur si fallback OK
+    } finally {
+      setAvailLoading(false);
+    }
+  };
+
+  // Rafraîchir la dispo à l'ouverture du modal et à chaque changement date / heure
+  useEffect(() => {
+    if (!showAddSeanceModal) return;
+    if (!newSeance.date || !newSeance.heureDebut || !newSeance.heureFin) return;
+    fetchAvailability(newSeance.date, newSeance.heureDebut, newSeance.heureFin);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddSeanceModal, newSeance.date, newSeance.heureDebut, newSeance.heureFin]);
 
   // ----- UI ACTIONS -----
   const openAddSeanceModal = (day, timeSlot) => {
     if (!isAdmin) return;
     setSelectedTimeSlot({ day, timeSlot });
-    
-    // Réinitialiser le choix à "nouveau" par défaut
+
     setDuplicateChoice('new');
 
     if (edt?.dateDebut) {
@@ -249,12 +328,16 @@ export default function EmploiDuTempsTable() {
 
       const [startTime, endTime] = timeSlot.split('-');
 
-      setNewSeance((prev) => ({
-        ...prev,
+      const nextState = {
+        ...newSeance,
         date: date.toISOString().split('T')[0],
         heureDebut: `${startTime}:00`,
         heureFin: `${endTime}:00`,
-      }));
+      };
+      setNewSeance(nextState);
+
+      // Précharger la dispo pour ce créneau
+      fetchAvailability(nextState.date, nextState.heureDebut, nextState.heureFin);
     }
 
     setShowAddSeanceModal(true);
@@ -265,17 +348,18 @@ export default function EmploiDuTempsTable() {
     setError(null);
     try {
       let payload;
-      
+
       if (duplicateChoice === 'duplicate') {
-        // Trouver la dernière séance du même jour
-        const currentDaySeances = edt?.seances?.filter(seance => {
-          const seanceDate = new Date(seance.date);
-          const dayIndex = seanceDate.getDay(); // 0=dim, 1=lun...
-          return days[dayIndex - 1] === selectedTimeSlot.day;
-        }) || [];
-        
+        const currentDaySeances =
+          edt?.seances?.filter((seance) => {
+            const seanceDate = new Date(seance.date);
+            const dayIndex = seanceDate.getDay(); // 0=dim, 1=lun...
+            return days[dayIndex - 1] === selectedTimeSlot.day;
+          }) || [];
+
         if (currentDaySeances.length > 0) {
           const lastSeance = currentDaySeances[currentDaySeances.length - 1];
+          // Petit garde-fou: si le prof/salle de la séance copiée ne sont pas dispos, on prévient côté UI
           payload = {
             coursId: lastSeance.cours?.id,
             professeurId: lastSeance.professeur?.id,
@@ -286,7 +370,6 @@ export default function EmploiDuTempsTable() {
             statut: 'PLANIFIEE',
           };
         } else {
-          // Fallback au cas où
           payload = { ...newSeance };
         }
       } else {
@@ -311,6 +394,8 @@ export default function EmploiDuTempsTable() {
         statut: 'PLANIFIEE',
       });
       setSelectedTimeSlot({ day: null, timeSlot: null });
+      setAvailableProfesseurs([]);
+      setAvailableSalles([]);
       setMessage('Séance ajoutée avec succès');
     } catch (e) {
       setError(e?.response?.data?.message || "Erreur lors de l'ajout de la séance");
@@ -337,9 +422,7 @@ export default function EmploiDuTempsTable() {
         <h1 className="title">Emploi du Temps par Classe</h1>
       </div>
 
-      {message && (
-        <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl">{message}</div>
-      )}
+      {message && <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl">{message}</div>}
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl">{error}</div>}
 
       {/* Sélecteur de classe */}
@@ -401,7 +484,6 @@ export default function EmploiDuTempsTable() {
                       const seance = schedule[day]?.[timeSlot] || null;
                       const mp = mergePlan[day]?.[timeSlot] || { rowSpan: 1, hidden: false };
                       if (mp.hidden) return null;
-
                       const isMerged = mp.rowSpan > 1;
 
                       return (
@@ -409,12 +491,8 @@ export default function EmploiDuTempsTable() {
                           key={`${day}-${timeSlot}`}
                           className="border align-top min-w-[200px] relative group p-0"
                           rowSpan={mp.rowSpan}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.classList.add('bg-gray-50');
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.classList.remove('bg-gray-50');
-                          }}
+                          onMouseEnter={(e) => e.currentTarget.classList.add('bg-gray-50')}
+                          onMouseLeave={(e) => e.currentTarget.classList.remove('bg-gray-50')}
                         >
                           {seance ? (
                             <div
@@ -516,8 +594,8 @@ export default function EmploiDuTempsTable() {
 
       {selectedClass && !edt && !loading && (
         <div className="card text-center py-8">
-          <p className="text-gray-500">Aucun emploi du temps trouvé pour cette classe.</p>
-          {isAdmin && <button className="btn btn-primary mt-4">Créer un nouvel emploi du temps</button>}
+          <p className="text-gray-500 mb-6">Aucun emploi du temps trouvé pour cette classe.</p>
+          {isAdmin && <Link to="/gestion-edt" className="btn btn-primary mt-7">Créer un nouvel emploi du temps</Link>}
         </div>
       )}
 
@@ -528,170 +606,260 @@ export default function EmploiDuTempsTable() {
         onClose={() => {
           setShowAddSeanceModal(false);
           setSelectedTimeSlot({ day: null, timeSlot: null });
+          setAvailError(null);
+          setAvailableProfesseurs([]);
+          setAvailableSalles([]);
         }}
       >
-        <form onSubmit={addSeance} className="space-y-3">
-          <div className="bg-blue-50 p-3 rounded-lg mb-4">
+        <form onSubmit={addSeance} className="space-y-4">
+          {/* Section créneau sélectionné */}
+          <div className="bg-blue-50 p-3 rounded-lg">
             <h4 className="font-semibold text-blue-800">Créneau sélectionné :</h4>
             <p className="text-blue-600">
               {selectedTimeSlot.day} - {selectedTimeSlot.timeSlot}
             </p>
+
+            {availLoading ? (
+              <p className="text-xs text-blue-700 mt-1">Recherche des disponibilités…</p>
+            ) : (
+              <>
+                <p className="text-xs text-blue-700 mt-1">
+                  {sortedAvailableProfesseurs.length} prof(s) dispo · {sortedAvailableSalles.length} salle(s) dispo
+                  {availError ? ' (fallback local)' : ''}
+                </p>
+
+                {/* Liste des professeurs dispo (chips cliquables) */}
+                <div className="mt-2">
+                  <div className="text-xs font-semibold text-gray-700 mb-1">Professeurs disponibles</div>
+                  {sortedAvailableProfesseurs.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {sortedAvailableProfesseurs.slice(0, 8).map((p) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          className="px-2 py-1 rounded-full bg-green-50 border border-green-200 text-green-800 text-xs hover:bg-green-100"
+                          onClick={() => setNewSeance((s) => ({ ...s, professeurId: Number(p.id) }))}
+                          title="Cliquer pour sélectionner ce professeur"
+                        >
+                          {displayProf(p)}
+                        </button>
+                      ))}
+                      {sortedAvailableProfesseurs.length > 8 && (
+                        <span className="text-xs text-gray-500">
+                          +{sortedAvailableProfesseurs.length - 8} autres…
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">Aucun professeur disponible.</div>
+                  )}
+                </div>
+
+                {/* Liste des salles dispo (chips cliquables) */}
+                <div className="mt-3">
+                  <div className="text-xs font-semibold text-gray-700 mb-1">Salles disponibles</div>
+                  {sortedAvailableSalles.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {sortedAvailableSalles.map((salle) => (
+                        <button
+                          type="button"
+                          key={salle.id}
+                          className="px-2 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs hover:bg-blue-100"
+                          onClick={() => setNewSeance((s) => ({ ...s, salleId: Number(salle.id) }))}
+                          title="Cliquer pour sélectionner cette salle"
+                        >
+                          {displaySalle(salle)}
+                        </button>
+                      ))}
+                      {/* {sortedAvailableSalles.length > 8 && (
+                        <span className="text-xs text-gray-500">
+                          +{sortedAvailableSalles.length - 8} autres…
+                        </span>
+                      )} */}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">Aucune salle disponible.</div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Nouvelle section pour le choix de duplication */}
-          {edt?.seances?.some(seance => {
+          {/* Choix duplication */}
+          {edt?.seances?.some((seance) => {
             const seanceDate = new Date(seance.date);
             const dayIndex = seanceDate.getDay(); // 0=dim, 1=lun...
             return days[dayIndex - 1] === selectedTimeSlot.day;
           }) && (
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <label className="label">Type d'ajout :</label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="duplicateChoice"
-                    value="new"
-                    checked={duplicateChoice === 'new'}
-                    onChange={(e) => setDuplicateChoice(e.target.value)}
-                    className="mr-2"
-                  />
-                  Nouvelle séance
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="duplicateChoice"
-                    value="duplicate"
-                    checked={duplicateChoice === 'duplicate'}
-                    onChange={(e) => setDuplicateChoice(e.target.value)}
-                    className="mr-2"
-                  />
-                  Même séance que précédemment
-                </label>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <label className="label">Type d'ajout :</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="duplicateChoice"
+                      value="new"
+                      checked={duplicateChoice === 'new'}
+                      onChange={(e) => setDuplicateChoice(e.target.value)}
+                      className="mr-2"
+                    />
+                    Nouvelle séance
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="duplicateChoice"
+                      value="duplicate"
+                      checked={duplicateChoice === 'duplicate'}
+                      onChange={(e) => setDuplicateChoice(e.target.value)}
+                      className="mr-2"
+                    />
+                    Même séance que précédemment
+                  </label>
+                </div>
+                {duplicateChoice === 'duplicate' && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    La séance utilisera le même cours, professeur et salle que la dernière séance de ce jour.
+                  </p>
+                )}
               </div>
-              {duplicateChoice === 'duplicate' && (
-                <p className="text-xs text-gray-600 mt-2">
-                  La séance utilisera le même cours, professeur et salle que la dernière séance de ce jour.
-                </p>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* Le reste du formulaire avec une condition pour masquer certains champs en mode duplication */}
+          {/* En mode NEW: listes filtrées par dispo - ORGANISÉ EN GRID 2 COLONNES */}
           {duplicateChoice === 'new' && (
-            <>
-              <div>
-                <label className="label">Cours *</label>
-                <select
-                  className="input"
-                  value={newSeance.coursId}
-                  onChange={e => setNewSeance(s => ({ ...s, coursId: Number(e.target.value) }))}
-                  required
-                >
-                  <option value="">Sélectionner un cours</option>
-                  {cours.length === 0 && selectedClass?.id && (
-                    <option disabled value="">
-                      Aucun cours associé à cette classe — associez-en dans "Cours" (ou via PATCH /set-classes)
-                    </option>
-                  )}
-                  {cours.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} - {c.intitule}
-                    </option>
-                  ))}
-                </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="label">Cours *</label>
+                  <select
+                    className="input"
+                    value={newSeance.coursId}
+                    onChange={(e) => setNewSeance((s) => ({ ...s, coursId: Number(e.target.value) }))}
+                    required
+                  >
+                    <option value="">Sélectionner un cours</option>
+                    {cours.length === 0 && selectedClass?.id && (
+                      <option disabled value="">
+                        Aucun cours associé à cette classe
+                      </option>
+                    )}
+                    {cours.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} - {c.intitule}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label">Date *</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={newSeance.date}
+                    onChange={(e) => setNewSeance((s) => ({ ...s, date: e.target.value }))}
+                    required
+                    min={edt?.dateDebut}
+                    max={edt?.dateFin}
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Statut</label>
+                  <select
+                    className="input"
+                    value={newSeance.statut}
+                    onChange={(e) => setNewSeance((s) => ({ ...s, statut: e.target.value }))}
+                  >
+                    <option value="PLANIFIEE">Planifiée</option>
+                    <option value="EFFECTUEE">Effectuée</option>
+                    <option value="ANNULEE">Annulée</option>
+                    <option value="REPORTEE">Reportée</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="label">Professeur *</label>
-                <select
-                  className="input"
-                  value={newSeance.professeurId}
-                  onChange={(e) => setNewSeance((s) => ({ ...s, professeurId: Number(e.target.value) }))}
-                  required
-                >
-                  <option value="">Sélectionner un professeur</option>
-                  {professeurs.map((prof) => (
-                    <option key={prof.id} value={prof.id}>
-                      {prof.nom} {prof.prenom}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="label">Professeur disponible *</label>
+                  <select
+                    className="input"
+                    value={newSeance.professeurId}
+                    onChange={(e) => setNewSeance((s) => ({ ...s, professeurId: Number(e.target.value) }))}
+                    required
+                  >
+                    <option value="">{availLoading ? 'Chargement…' : 'Sélectionner un professeur'}</option>
+                    {availableProfesseurs.map((prof) => (
+                      <option key={prof.id} value={prof.id}>
+                        {prof.nom} {prof.prenom}
+                      </option>
+                    ))}
+                    {!availLoading && availableProfesseurs.length === 0 && (
+                      <option disabled value="">
+                        Aucun professeur disponible à ce créneau
+                      </option>
+                    )}
+                  </select>
+                </div>
 
-              <div>
-                <label className="label">Salle *</label>
-                <select
-                  className="input"
-                  value={newSeance.salleId}
-                  onChange={(e) => setNewSeance((s) => ({ ...s, salleId: Number(e.target.value) }))}
-                  required
-                >
-                  <option value="">Sélectionner une salle</option>
-                  {salles.map((salle) => (
-                    <option key={salle.id} value={salle.id}>
-                      {salle.code} ({salle.capacite} places)
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="label">Salle disponible *</label>
+                  <select
+                    className="input"
+                    value={newSeance.salleId}
+                    onChange={(e) => setNewSeance((s) => ({ ...s, salleId: Number(e.target.value) }))}
+                    required
+                  >
+                    <option value="">{availLoading ? 'Chargement…' : 'Sélectionner une salle'}</option>
+                    {availableSalles.map((salle) => (
+                      <option key={salle.id} value={salle.id}>
+                        {salle.code} ({salle.capacite} places)
+                      </option>
+                    ))}
+                    {!availLoading && availableSalles.length === 0 && (
+                      <option disabled value="">
+                        Aucune salle disponible à ce créneau
+                      </option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Heure de début *</label>
+                    <input
+                      className="input"
+                      type="time"
+                      value={newSeance.heureDebut}
+                      onChange={(e) => setNewSeance((s) => ({ ...s, heureDebut: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Heure de fin *</label>
+                    <input
+                      className="input"
+                      type="time"
+                      value={newSeance.heureFin}
+                      onChange={(e) => setNewSeance((s) => ({ ...s, heureFin: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Les champs communs restent visibles dans les deux modes */}
-          <div>
-            <label className="label">Date *</label>
-            <input
-              className="input"
-              type="date"
-              value={newSeance.date}
-              onChange={(e) => setNewSeance((s) => ({ ...s, date: e.target.value }))}
-              required
-              min={edt?.dateDebut}
-              max={edt?.dateFin}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Heure de début *</label>
-              <input
-                className="input"
-                type="time"
-                value={newSeance.heureDebut}
-                onChange={(e) => setNewSeance((s) => ({ ...s, heureDebut: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">Heure de fin *</label>
-              <input
-                className="input"
-                type="time"
-                value={newSeance.heureFin}
-                onChange={(e) => setNewSeance((s) => ({ ...s, heureFin: e.target.value }))}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="label">Statut</label>
-            <select
-              className="input"
-              value={newSeance.statut}
-              onChange={(e) => setNewSeance((s) => ({ ...s, statut: e.target.value }))}
+          {/* Boutons d'action */}
+          <div className="flex gap-2 pt-4 border-t border-gray-200">
+            <button
+              type="submit"
+              className="btn btn-primary flex-1"
+              disabled={
+                duplicateChoice === 'new' &&
+                (!newSeance.coursId || !newSeance.professeurId || !newSeance.salleId || availLoading)
+              }
             >
-              <option value="PLANIFIEE">Planifiée</option>
-              <option value="EFFECTUEE">Effectuée</option>
-              <option value="ANNULEE">Annulée</option>
-              <option value="REPORTEE">Reportée</option>
-            </select>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <button type="submit" className="btn btn-primary flex-1">
               {duplicateChoice === 'duplicate' ? 'Dupliquer la séance' : 'Ajouter la séance'}
             </button>
             <button
@@ -700,6 +868,9 @@ export default function EmploiDuTempsTable() {
               onClick={() => {
                 setShowAddSeanceModal(false);
                 setSelectedTimeSlot({ day: null, timeSlot: null });
+                setAvailError(null);
+                setAvailableProfesseurs([]);
+                setAvailableSalles([]);
               }}
             >
               Annuler

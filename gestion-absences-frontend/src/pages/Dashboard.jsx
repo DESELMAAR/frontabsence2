@@ -11,7 +11,7 @@ const cards = [
   { to: '/salles', label: 'Salles', desc: 'Gérer les salles' },
   { to: '/cours', label: 'Cours', desc: 'Gérer les cours' },
   { to: '/seances', label: 'Séances', desc: 'Planifier les séances' },
-  { to: '/edt', label: 'Emploi du temps', desc: 'Générer et consulter' },
+  // { to: '/edt', label: 'Emploi du temps', desc: 'Générer et consulter' },
 ]
 
 export default function Dashboard() {
