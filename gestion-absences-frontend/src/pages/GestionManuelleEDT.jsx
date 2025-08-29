@@ -128,11 +128,11 @@ export default function GestionManuelleEDT() {
   if (loading) return <div className="p-4 text-center">Chargement...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-blue-300 p-4 rounded-xl">
       <div className="flex justify-between items-center">
         <h1 className="title">Gestion Manuelle des Emplois du Temps</h1>
         {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+          <button className="btn border-0 btn-primary" onClick={() => setShowCreateModal(true)}>
             + Nouvel Emploi Du Temps
           </button>
         )}

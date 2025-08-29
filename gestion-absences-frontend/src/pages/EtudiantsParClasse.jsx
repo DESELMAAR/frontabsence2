@@ -36,7 +36,7 @@ export default function EtudiantsParClasse() {
     }, []);
 
     return (
-        <div className="p-6">
+        <div className="p-6 bg-white rounded-xl p-4">
             <h1 className="text-2xl font-bold mb-6">Étudiants par classe</h1>
 
             {classes.map((classe, index) => {
@@ -53,7 +53,7 @@ export default function EtudiantsParClasse() {
                         >
                             Classe: {classe.niveau} ({classe.nom})
                         </h2>
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left  border-collapse">
                             <thead className={`bg-${color}-100`}>
                                 <tr>
                                     <th className="p-2 border">ID</th>

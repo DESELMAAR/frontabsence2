@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom'
 import React from "react";
+import Guide from './guide';
 
 
 const cards = [
@@ -26,6 +27,8 @@ export default function Dashboard() {
           </Link>
         ))}
       </div>
+
+      <Guide/>
     </div>
   )
 }

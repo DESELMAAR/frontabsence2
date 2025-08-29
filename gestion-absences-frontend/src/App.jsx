@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import EtudiantsParClasse from "./pages/EtudiantsParClasse";
 import GestionManuelleEDT from './pages/GestionManuelleEDT'
 import EmploiDuTempsTable from './pages/EmploiDuTempsTable'
+import bgImg from './assets/7.png'; 
 
 
 function Protected({ children }) {
@@ -22,7 +23,7 @@ function Protected({ children }) {
 
 export default function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen  bg-cover bg-fixed bg-center bg-no-repeat" style={{ backgroundImage: `url(${bgImg})` }}>
       <Navbar />
       <div className="max-w-7xl mx-auto p-4">
         <Routes>
