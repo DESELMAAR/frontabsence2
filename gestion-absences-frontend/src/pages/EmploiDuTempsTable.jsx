@@ -39,6 +39,14 @@ export default function EmploiDuTempsTable() {
 
   const isAdmin = user?.role === 'ROLE_ADMIN';
 
+  // Fonction pour définir une erreur avec timeout
+  const setErrorWithTimeout = (errorMessage) => {
+    setError(errorMessage);
+    setTimeout(() => {
+      setError(null);
+    }, 5000); // 5 secondes
+  };
+
   // ----- LOAD DATA -----
   useEffect(() => {
     loadClasses();
@@ -61,7 +69,7 @@ export default function EmploiDuTempsTable() {
       const { data } = await api.get('/api/classes');
       setClasses(data || []);
     } catch (e) {
-      setError('Erreur lors du chargement des classes');
+      setErrorWithTimeout('Erreur lors du chargement des classes');
     }
   };
 
@@ -73,7 +81,7 @@ export default function EmploiDuTempsTable() {
       setMessage(null);
     } catch (e) {
       setEdt(null);
-      setError('Aucun emploi du temps trouvé pour cette classe');
+      setErrorWithTimeout('Aucun emploi du temps trouvé pour cette classe');
     } finally {
       setLoading(false);
     }
@@ -398,7 +406,7 @@ export default function EmploiDuTempsTable() {
       setAvailableSalles([]);
       setMessage('Séance ajoutée avec succès');
     } catch (e) {
-      setError(e?.response?.data?.message || "Erreur lors de l'ajout de la séance");
+      setErrorWithTimeout(e?.response?.data?.message || "Erreur lors de l'ajout de la séance");
     }
   };
 
@@ -410,15 +418,15 @@ export default function EmploiDuTempsTable() {
       setEdt(data);
       setMessage('Séance supprimée avec succès');
     } catch (e) {
-      setError('Erreur lors de la suppression de la séance');
+      setErrorWithTimeout('Erreur lors de la suppression de la séance');
     }
   };
 
   if (loading) return <div className="p-4 text-center">Chargement...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 bg-slate-100 p-4 rounded-xl">
+      <div className="flex justify-between items-center ">
         <h1 className="title">Emploi du Temps par Classe</h1>
       </div>
 
@@ -447,7 +455,7 @@ export default function EmploiDuTempsTable() {
       </div>
 
       {selectedClass && edt && (
-        <div className="space-y-4">
+        <div className="space-y-4 bg-white rounded-xl">
           {/* En-tête EDT */}
           <div className="card">
             <div className="flex justify-between items-center">
@@ -671,11 +679,6 @@ export default function EmploiDuTempsTable() {
                           {displaySalle(salle)}
                         </button>
                       ))}
-                      {/* {sortedAvailableSalles.length > 8 && (
-                        <span className="text-xs text-gray-500">
-                          +{sortedAvailableSalles.length - 8} autres…
-                        </span>
-                      )} */}
                     </div>
                   ) : (
                     <div className="text-xs text-gray-500">Aucune salle disponible.</div>

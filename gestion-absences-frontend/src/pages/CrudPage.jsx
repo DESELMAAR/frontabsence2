@@ -113,7 +113,7 @@ export default function CrudPage({ entityKey }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-white p-4 rounded-xl">
       <div className="flex items-center justify-between">
         <h1 className="title">{cfg.label}</h1>
         <div className="flex items-center gap-2">

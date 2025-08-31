@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import React from "react";
+import GuideLeftSide from './GuideLeftSide';
 
 export default function Guide() {
     return (
-      <div className="grid mt-4 grid-cols-1 gap-6 md:grid-cols-[70%_30%]">
+      <div className="grid mt-4 grid-cols-1 gap-6 md:grid-cols-[70%_28%]">
   {/* Colonne 1 — 70% */}
   <div className="max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     {/* Header */}
@@ -162,18 +163,8 @@ export default function Guide() {
   </div>
 
   {/* Colonne 2 — 30% */}
-  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h3 className="text-lg font-semibold text-slate-800">Panneau latéral</h3>
-    <p className="mt-1 text-slate-600 text-sm">
-      Placez ici des raccourcis, KPIs, liens utiles, ou un mini tutoriel vidéo.
-    </p>
-    <div className="mt-4 space-y-2 text-sm">
-      <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Créer une filière</a>
-      <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Créer une classe</a>
-      <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Importer des étudiants</a>
-      <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Nouveau cours</a>
-    </div>
-  </div>
+ 
+  <GuideLeftSide/>
 </div>
 
 
