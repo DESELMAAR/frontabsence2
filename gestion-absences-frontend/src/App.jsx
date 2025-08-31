@@ -59,13 +59,13 @@ export default function App() {
     <div className="relative min-h-screen">
       {/* Fixed background layer */}
       <div
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${resolvedBg})` }}
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed bg-no-repeat"
+        style={{ backgroundImage: `url(http://localhost:8080/.${resolvedBg})` }}
       />
       {/* Soft overlay for readability */}
-      <div className="fixed inset-0 -z-10 bg-white/70 backdrop-blur-sm" />
+      <div className="fixed inset-0 -z-10 bg-white/20 " />
 
-      <Navbar />
+      <Navbar/>
 
       <div className="mx-auto p-4 mt-4">
         <Routes>

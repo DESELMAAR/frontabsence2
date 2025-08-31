@@ -164,6 +164,7 @@ export default function Guide() {
 
   {/* Colonne 2 — 30% */}
  
+ 
   <GuideLeftSide/>
 </div>
 

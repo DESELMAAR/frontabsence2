@@ -13,7 +13,7 @@ export default function GuideLeftSide() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  // Charger l'URL actuelle
+  // Load current background
   useEffect(() => {
     (async () => {
       try {
@@ -25,16 +25,17 @@ export default function GuideLeftSide() {
     })();
   }, []);
 
-  // Prévisualisation
+  // Preview selected file
   const onFileChange = (e) => {
-    setMsg(""); setErr("");
+    setMsg("");
+    setErr("");
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.type !== "image/png") {
-      setErr("Veuillez sélectionner un fichier PNG.");
+    if (!f.type.startsWith("image/")) {
+      setErr("Veuillez sélectionner une image (PNG, JPG, JPEG, WEBP).");
       return;
     }
-    if (f.size > 9 * 1024 * 1024) {
+    if (f.size > 5 * 1024 * 1024) {
       setErr("Taille max 5 Mo.");
       return;
     }
@@ -42,10 +43,12 @@ export default function GuideLeftSide() {
     setPreview(URL.createObjectURL(f));
   };
 
+  // Upload new background
   const onUpload = async () => {
     if (!file) return;
     setUploading(true);
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -57,8 +60,6 @@ export default function GuideLeftSide() {
       setPreview("");
       setFile(null);
       setMsg("Background mis à jour ✅");
-
-      // OPTIONNEL : stocker pour que ton layout global lise l’URL
       localStorage.setItem("app:bgUrl", url);
     } catch (e) {
       setErr(e?.response?.data?.message || "Échec de l'upload");
@@ -67,9 +68,11 @@ export default function GuideLeftSide() {
     }
   };
 
+  // Reset background
   const onReset = async () => {
     setUploading(true);
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     try {
       await api.delete("/api/settings/background");
       setCurrentUrl("");
@@ -90,23 +93,27 @@ export default function GuideLeftSide() {
       </p>
 
       <div className="mt-4 space-y-2 text-sm">
-        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Créer une filière</a>
-        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Créer une classe</a>
-        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Importer des étudiants</a>
-        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="#!">Nouveau cours</a>
+        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="/classes">
+          Créer une classe
+        </a>
+        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="/etudiants">
+          Importer des étudiants
+        </a>
+        <a className="block rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50" href="/cours">
+          Nouveau cours
+        </a>
       </div>
 
-      {/* Section Admin : Upload background */}
       {isAdmin && (
         <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <h4 className="font-semibold text-slate-800">Background de l’application (PNG)</h4>
+          <h4 className="font-semibold text-slate-800">Background de l’application</h4>
 
-          {/* Image actuelle */}
+          {/* Current background preview */}
           <div className="mt-3">
             <p className="text-xs text-slate-500 mb-2">Image actuelle :</p>
             {currentUrl ? (
               <img
-                src={currentUrl}
+                src={`http://localhost:8080${currentUrl}`}
                 alt="background actuel"
                 className="h-24 w-full object-cover rounded-lg border border-slate-200"
               />
@@ -117,12 +124,14 @@ export default function GuideLeftSide() {
             )}
           </div>
 
-          {/* Choix fichier */}
+          {/* File input */}
           <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Choisir un fichier PNG</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Choisir une image
+            </label>
             <input
               type="file"
-              accept="image/png"
+              accept="image/png, image/jpeg, image/jpg, image/webp"
               onChange={onFileChange}
               className="block w-full text-sm file:mr-3 file:rounded-lg file:border file:border-slate-200 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-50"
             />
@@ -157,11 +166,23 @@ export default function GuideLeftSide() {
           </div>
 
           {/* Messages */}
-          {msg && <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{msg}</div>}
-          {err && <div className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</div>}
+          {msg && (
+            <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              {msg}
+            </div>
+          )}
+          {err && (
+            <div className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {err}
+            </div>
+          )}
 
           <p className="mt-3 text-[11px] text-slate-500">
-            Astuce : ton layout global peut lire <code>localStorage.getItem("app:bgUrl")</code> pour appliquer ce background automatiquement.
+            Astuce : ton layout global peut lire{" "}
+            <code className="bg-slate-100 px-1 rounded">
+              localStorage.getItem("app:bgUrl")
+            </code>{" "}
+            pour appliquer ce background automatiquement.
           </p>
         </div>
       )}

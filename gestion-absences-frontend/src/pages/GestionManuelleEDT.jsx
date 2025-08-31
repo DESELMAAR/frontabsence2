@@ -128,11 +128,11 @@ export default function GestionManuelleEDT() {
   if (loading) return <div className="p-4 text-center">Chargement...</div>;
 
   return (
-    <div className="space-y-6 bg-white p-4 rounded-xl">
+    <div className="space-y-6 bg-black bg-opacity-30 p-4 rounded-xl">
       <div className="flex justify-between items-center">
-        <h1 className="title">Gestion Manuelle des Emplois du Temps</h1>
+        <h1 className="title text-white/90">Gestion Manuelle des Emplois du Temps</h1>
         {isAdmin && (
-          <button className="btn border-0 btn-primary" onClick={() => setShowCreateModal(true)}>
+          <button className="btn bg-lime-600 btn-primary" onClick={() => setShowCreateModal(true)}>
             + Nouvel Emploi Du Temps
           </button>
         )}
@@ -141,7 +141,7 @@ export default function GestionManuelleEDT() {
       {message && <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl">{message}</div>}
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl">{error}</div>}
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {edts.map(edt => (
           <div key={edt.id} className="card">
             <div className="flex justify-between items-start">

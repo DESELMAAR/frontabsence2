@@ -113,9 +113,9 @@ export default function CrudPage({ entityKey }) {
   }
 
   return (
-    <div className="space-y-4 bg-white p-4 rounded-xl">
+    <div className="space-y-4 bg-black bg-opacity-30 backdrop-blur-sm p-4 rounded-xl">
       <div className="flex items-center justify-between">
-        <h1 className="title">{cfg.label}</h1>
+        <h1 className="title text-white">{cfg.label}</h1>
         <div className="flex items-center gap-2">
           <button className="btn btn-primary" onClick={onOpenCreate}>+ Nouveau</button>
           <button className="btn" onClick={fetchList}>Rafraîchir</button>

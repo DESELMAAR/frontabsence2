@@ -36,8 +36,8 @@ export default function EtudiantsParClasse() {
     }, []);
 
     return (
-        <div className="p-6 bg-white rounded-xl p-4">
-            <h1 className="text-2xl font-bold mb-6">Étudiants par classe</h1>
+        <div className=" bg-black rounded-xl p-4  bg-opacity-30 ">
+            <h1 className="text-2xl text-white/90 font-bold mb-6">Étudiants par classe</h1>
 
             {classes.map((classe, index) => {
                 const color = colors[index % colors.length];
@@ -46,15 +46,15 @@ export default function EtudiantsParClasse() {
                 return (
                     <div
                         key={classe.id}
-                        className={`mb-8 rounded-lg shadow-md border border-${color}-500 ring-2 ring-${color}-400`}
+                        className={`mb-8 rounded-lg shadow-md  bg-white  ring-2 `}
                     >
                         <h2
-                            className={`text-lg font-semibold text-green-800 bg-${color}-500 px-4 py-2 rounded-t-lg`}
+                            className={`text-lg font-semibold text-green-800  px-4 py-2 rounded-t-lg`}
                         >
                             Classe: {classe.niveau} ({classe.nom})
                         </h2>
-                        <table className="w-full text-left  border-collapse">
-                            <thead className={`bg-${color}-100`}>
+                        <table className="w-full text-left   border-collapse">
+                            <thead >
                                 <tr>
                                     <th className="p-2 border">ID</th>
                                     <th className="p-2 border">Nom</th>

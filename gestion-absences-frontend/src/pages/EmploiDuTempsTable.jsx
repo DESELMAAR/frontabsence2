@@ -425,9 +425,9 @@ export default function EmploiDuTempsTable() {
   if (loading) return <div className="p-4 text-center">Chargement...</div>;
 
   return (
-    <div className="space-y-6 bg-slate-100 p-4 rounded-xl">
+    <div className="space-y-6 bg-black bg-opacity-30 p-4 rounded-xl">
       <div className="flex justify-between items-center ">
-        <h1 className="title">Emploi du Temps par Classe</h1>
+        <h1 className="title text-white/90">Emploi du Temps par Classe</h1>
       </div>
 
       {message && <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl">{message}</div>}

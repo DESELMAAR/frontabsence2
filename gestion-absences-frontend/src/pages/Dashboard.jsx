@@ -17,8 +17,8 @@ const cards = [
 
 export default function Dashboard() {
   return (
-    <div className='bg-white p-4 rounded-xl'>
-      <h1 className="title mb-4">Tableau de bord</h1>
+    <div className='bg-black bg-opacity-30 p-4 rounded-xl'>
+      <h1 className="title text-white mb-4">Tableau de bord</h1>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map(c => (
           <Link key={c.to} to={c.to} className="card hover:shadow-md transition">
