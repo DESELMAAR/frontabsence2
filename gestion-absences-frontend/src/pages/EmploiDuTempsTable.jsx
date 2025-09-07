@@ -2,31 +2,59 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import AttendanceModal from '../components/AttendanceModal';
 import deleteIcon from '../delete.svg';
 import { Link } from 'react-router-dom';
+import { downloadPdf } from '../services/api';
+
+import {
+  getSeanceAbsences,
+  getSeanceAbsencesCount,
+  bulkCreateAbsences,
+  listEtudiantsByClasse,
+} from '../services/absenceApi';
+
+// Helpers locaux pour éviter les erreurs d'import nommés
+const getErrorMessage = (err, fallback) =>
+  err?.response?.data?.message || err?.message || fallback || 'Erreur inattendue';
+
+const AvailabilityAPI = {
+  professeurs: async (date, start, end) => {
+    const { data } = await api.get('/api/professeurs/available', {
+      params: { date, start, end },
+    });
+    return data;
+  },
+  salles: async (date, start, end) => {
+    const { data } = await api.get('/api/salles/available', {
+      params: { date, start, end },
+    });
+    return data;
+  },
+};
 
 export default function EmploiDuTempsTable() {
   const { user } = useAuth();
+
+  // ====== States ======
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
+
   const [edt, setEdt] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
-  const [showAddSeanceModal, setShowAddSeanceModal] = useState(false);
+
+  // Référentiels
   const [cours, setCours] = useState([]);
   const [professeurs, setProfesseurs] = useState([]);
   const [salles, setSalles] = useState([]);
+
+  // Ajout séance
+  const [showAddSeanceModal, setShowAddSeanceModal] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState({ day: null, timeSlot: null });
   const [duplicateChoice, setDuplicateChoice] = useState('new'); // 'new' | 'duplicate'
-
-  // Nouveaux états pour la disponibilité
-  const [availableProfesseurs, setAvailableProfesseurs] = useState([]);
-  const [availableSalles, setAvailableSalles] = useState([]);
-  const [availLoading, setAvailLoading] = useState(false);
-  const [availError, setAvailError] = useState(null);
-
-  // Formulaire ajout séance
   const [newSeance, setNewSeance] = useState({
     coursId: '',
     professeurId: '',
@@ -37,17 +65,55 @@ export default function EmploiDuTempsTable() {
     statut: 'PLANIFIEE',
   });
 
+  // Dispo
+  const [availableProfesseurs, setAvailableProfesseurs] = useState([]);
+  const [availableSalles, setAvailableSalles] = useState([]);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availError, setAvailError] = useState(null);
+
+  // Absences
+  const [absMenuSeanceId, setAbsMenuSeanceId] = useState(null);
+  const [absModalOpen, setAbsModalOpen] = useState(false);
+  const [absModalLoading, setAbsModalLoading] = useState(false);
+  const [absModalError, setAbsModalError] = useState(null);
+  const [absSeance, setAbsSeance] = useState(null);
+  const [absStats, setAbsStats] = useState({ total: 0, justifiees: 0, nonJustifiees: 0 });
+  const [absList, setAbsList] = useState([]);
+  const [etudiantsClasse, setEtudiantsClasse] = useState([]);
+  const [absSelection, setAbsSelection] = useState(new Set());
+
   const isAdmin = user?.role === 'ROLE_ADMIN';
 
-  // Fonction pour définir une erreur avec timeout
-  const setErrorWithTimeout = (errorMessage) => {
-    setError(errorMessage);
-    setTimeout(() => {
-      setError(null);
-    }, 5000); // 5 secondes
+  const currentUserId = user?.id ?? user?.userId;
+  // ====== Helpers ======
+  const setErrorWithTimeout = (msg) => {
+    setError(msg);
+    setTimeout(() => setError(null), 5000);
   };
 
-  // ----- LOAD DATA -----
+  const displayProf = (p) =>
+    [p?.nom, p?.prenom].filter(Boolean).join(' ').trim() || p?.email || `#${p?.id}`;
+
+  const displaySalle = (s) =>
+    s?.code || [s?.batiment, s?.numero].filter(Boolean).join('-') || `Salle #${s?.id}`;
+
+  const sortedAvailableProfesseurs = useMemo(
+    () => [...availableProfesseurs].sort((a, b) => displayProf(a).localeCompare(displayProf(b), 'fr')),
+    [availableProfesseurs]
+  );
+  const sortedAvailableSalles = useMemo(
+    () => [...availableSalles].sort((a, b) => displaySalle(a).localeCompare(displaySalle(b), 'fr')),
+    [availableSalles]
+  );
+
+  // Trouver le nom d'un étudiant à partir de son id via la liste etudiantsClasse
+  const nameOf = (id) => {
+    const et = etudiantsClasse.find((e) => String(e.id) === String(id));
+    return et ? `${et.nom ?? ''} ${et.prenom ?? ''}`.trim() || `Étudiant #${id}` : `Étudiant #${id}`;
+    // (utilisé dans AttendanceModal si nécessaire)
+  };
+
+  // ====== Data loading ======
   useEffect(() => {
     loadClasses();
   }, []);
@@ -59,7 +125,6 @@ export default function EmploiDuTempsTable() {
     }
   }, [selectedClass]);
 
-  // Quand on change de classe, on vide la sélection du cours
   useEffect(() => {
     setNewSeance((s) => ({ ...s, coursId: '' }));
   }, [selectedClass]);
@@ -68,7 +133,7 @@ export default function EmploiDuTempsTable() {
     try {
       const { data } = await api.get('/api/classes');
       setClasses(data || []);
-    } catch (e) {
+    } catch {
       setErrorWithTimeout('Erreur lors du chargement des classes');
     }
   };
@@ -79,7 +144,7 @@ export default function EmploiDuTempsTable() {
       const { data } = await api.get(`/api/emploi-du-temps/by-classe/${classe.id}/latest`);
       setEdt(data || null);
       setMessage(null);
-    } catch (e) {
+    } catch {
       setEdt(null);
       setErrorWithTimeout('Aucun emploi du temps trouvé pour cette classe');
     } finally {
@@ -106,7 +171,6 @@ export default function EmploiDuTempsTable() {
       }
 
       const [professeursRes, sallesRes] = await Promise.all([api.get('/api/professeurs'), api.get('/api/salles')]);
-
       setCours(coursData);
       setProfesseurs(professeursRes.data || []);
       setSalles(sallesRes.data || []);
@@ -118,31 +182,21 @@ export default function EmploiDuTempsTable() {
     }
   };
 
-  // 88888888888888888888888
-
-  const displayProf = (p) =>
-    [p?.nom, p?.prenom].filter(Boolean).join(' ').trim() || p?.email || `#${p?.id}`;
-
-  const displaySalle = (s) =>
-    s?.code || [s?.batiment, s?.numero].filter(Boolean).join('-') || `Salle #${s?.id}`;
-
-  // Listes triées pour un rendu propre
-  const sortedAvailableProfesseurs = useMemo(
-    () => [...availableProfesseurs].sort((a, b) => displayProf(a).localeCompare(displayProf(b), 'fr')),
-    [availableProfesseurs]
-  );
-
-  const sortedAvailableSalles = useMemo(
-    () => [...availableSalles].sort((a, b) => displaySalle(a).localeCompare(displaySalle(b), 'fr')),
-    [availableSalles]
-  );
-  // 888888888888888888888888
-  // ----- SCHEDULE ORGANIZATION -----
+  // ====== Schedule organization ======
   const organizeSchedule = () => {
     if (!edt || !edt.seances) return { days: [], timeSlots: [], schedule: {} };
 
     const daysOfWeek = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
-    const timeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00'];
+    const timeSlots = [
+      '08:00-09:00',
+      '09:00-10:00',
+      '10:00-11:00',
+      '11:00-12:00',
+      '14:00-15:00',
+      '15:00-16:00',
+      '16:00-17:00',
+      '17:00-18:00',
+    ];
 
     const schedule = {};
     daysOfWeek.forEach((day) => {
@@ -176,11 +230,9 @@ export default function EmploiDuTempsTable() {
   };
 
   const { days, timeSlots, schedule } = organizeSchedule();
-
-  // Hauteur visuelle d'un créneau
   const SLOT_HEIGHT = 80;
 
-  // ----- MERGE PLAN (rowspan) -----
+  // ====== Merge plan (rowSpan) ======
   const mergePlan = useMemo(() => {
     const plan = {};
     if (!days.length) return plan;
@@ -239,21 +291,11 @@ export default function EmploiDuTempsTable() {
     return plan;
   }, [days, timeSlots, schedule]);
 
-  // Helper d'affichage cours par classe
-  const isCoursForSelectedClass = (c) => {
-    if (!selectedClass?.id) return true;
-    if (Array.isArray(c.classes) && c.classes.length) {
-      return c.classes.some((cl) => cl.id === selectedClass.id);
-    }
-    return true;
-  };
-
-  // ---------- DISPONIBILITÉ (API + fallback local) ----------
+  // ====== Availability (API + fallback local) ======
   const normalizeTime = (t) => (t?.length === 5 ? `${t}:00` : t || '');
   const timeToMinutes = (t) => {
     const [h, m] = (t || '00:00:00').split(':').map(Number);
     return h * 60 + m;
-    // (ignore seconds)
   };
   const overlaps = (startA, endA, startB, endB) => {
     const a1 = timeToMinutes(normalizeTime(startA));
@@ -263,7 +305,6 @@ export default function EmploiDuTempsTable() {
     return a1 < b2 && a2 > b1;
   };
 
-  // Fallback local basé sur l'EDT courant (même jour + chevauchement)
   const computeLocalAvailability = (dateISO, start, end) => {
     if (!edt?.seances?.length) {
       return { profs: professeurs, rooms: salles, source: 'local:empty' };
@@ -295,25 +336,23 @@ export default function EmploiDuTempsTable() {
     setAvailLoading(true);
     setAvailError(null);
     try {
-      // Essaye endpoints "officiels" si tu les as côté back
-      const [pRes, sRes] = await Promise.all([
-        api.get('/api/professeurs/available', { params: { date: dateISO, start: normalizeTime(startTime), end: normalizeTime(endTime) } }),
-        api.get('/api/salles/available', { params: { date: dateISO, start: normalizeTime(startTime), end: normalizeTime(endTime) } }),
+      const [profs, rooms] = await Promise.all([
+        AvailabilityAPI.professeurs(dateISO, normalizeTime(startTime), normalizeTime(endTime)),
+        AvailabilityAPI.salles(dateISO, normalizeTime(startTime), normalizeTime(endTime)),
       ]);
-      setAvailableProfesseurs(Array.isArray(pRes.data) ? pRes.data : []);
-      setAvailableSalles(Array.isArray(sRes.data) ? sRes.data : []);
+      setAvailableProfesseurs(Array.isArray(profs) ? profs : []);
+      setAvailableSalles(Array.isArray(rooms) ? rooms : []);
+      setAvailError(null);
     } catch (err) {
-      // Fallback local si endpoints non présents (404) / erreur → calcule depuis EDT courant
       const { profs, rooms } = computeLocalAvailability(dateISO, startTime, endTime);
       setAvailableProfesseurs(profs);
       setAvailableSalles(rooms);
-      setAvailError(null); // on ne montre pas d'erreur si fallback OK
+      setAvailError(getErrorMessage(err, 'fallback'));
     } finally {
       setAvailLoading(false);
     }
   };
 
-  // Rafraîchir la dispo à l'ouverture du modal et à chaque changement date / heure
   useEffect(() => {
     if (!showAddSeanceModal) return;
     if (!newSeance.date || !newSeance.heureDebut || !newSeance.heureFin) return;
@@ -321,11 +360,10 @@ export default function EmploiDuTempsTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showAddSeanceModal, newSeance.date, newSeance.heureDebut, newSeance.heureFin]);
 
-  // ----- UI ACTIONS -----
+  // ====== Actions: Add / Remove seance ======
   const openAddSeanceModal = (day, timeSlot) => {
     if (!isAdmin) return;
     setSelectedTimeSlot({ day, timeSlot });
-
     setDuplicateChoice('new');
 
     if (edt?.dateDebut) {
@@ -333,7 +371,6 @@ export default function EmploiDuTempsTable() {
       const dayIndex = days.indexOf(day); // 0..5
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + dayIndex);
-
       const [startTime, endTime] = timeSlot.split('-');
 
       const nextState = {
@@ -343,8 +380,6 @@ export default function EmploiDuTempsTable() {
         heureFin: `${endTime}:00`,
       };
       setNewSeance(nextState);
-
-      // Précharger la dispo pour ce créneau
       fetchAvailability(nextState.date, nextState.heureDebut, nextState.heureFin);
     }
 
@@ -367,7 +402,6 @@ export default function EmploiDuTempsTable() {
 
         if (currentDaySeances.length > 0) {
           const lastSeance = currentDaySeances[currentDaySeances.length - 1];
-          // Petit garde-fou: si le prof/salle de la séance copiée ne sont pas dispos, on prévient côté UI
           payload = {
             coursId: lastSeance.cours?.id,
             professeurId: lastSeance.professeur?.id,
@@ -406,7 +440,7 @@ export default function EmploiDuTempsTable() {
       setAvailableSalles([]);
       setMessage('Séance ajoutée avec succès');
     } catch (e) {
-      setErrorWithTimeout(e?.response?.data?.message || "Erreur lors de l'ajout de la séance");
+      setErrorWithTimeout(getErrorMessage(e, "Erreur lors de l'ajout de la séance"));
     }
   };
 
@@ -417,16 +451,87 @@ export default function EmploiDuTempsTable() {
       const { data } = await api.delete(`/api/emploi-du-temps/${edt.id}/seances/${seanceId}`);
       setEdt(data);
       setMessage('Séance supprimée avec succès');
-    } catch (e) {
+    } catch {
       setErrorWithTimeout('Erreur lors de la suppression de la séance');
     }
   };
 
+  // ====== Absences ======
+  const closeAbsMenu = () => setAbsMenuSeanceId(null);
+
+  const toggleStudentInSelection = (id) => {
+    setAbsSelection((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const openAbsencesModal = async (seanceCell) => {
+    // seanceCell est l'objet "cellule" (avec raw), ou directement la séance simplifiée (depuis le rendu)
+    const seanceId = seanceCell?.raw?.id || seanceCell?.id;
+    if (!seanceId) return;
+
+    setAbsSeance(seanceCell.raw || { id: seanceId });
+    setAbsModalOpen(true);
+    setAbsModalLoading(true);
+    setAbsModalError(null);
+
+    try {
+      const [stats, list] = await Promise.all([
+        getSeanceAbsencesCount(seanceId).catch(() => ({ total: 0, justifiees: 0, nonJustifiees: 0 })),
+        getSeanceAbsences(seanceId).catch(() => []),
+      ]);
+      setAbsStats(stats || { total: 0, justifiees: 0, nonJustifiees: 0 });
+      setAbsList(Array.isArray(list) ? list : []);
+
+      const etuds = selectedClass?.id ? await listEtudiantsByClasse(selectedClass.id).catch(() => []) : [];
+      setEtudiantsClasse(Array.isArray(etuds) ? etuds : []);
+
+      // IMPORTANT : pré-cocher via etudiantId (le DTO ne contient pas l'objet etudiant)
+      const pre = new Set((list || []).map((a) => a?.etudiantId).filter(Boolean));
+      setAbsSelection(pre);
+    } catch (err) {
+      setAbsModalError(getErrorMessage(err, 'Impossible de charger les absences'));
+    } finally {
+      setAbsModalLoading(false);
+      closeAbsMenu();
+    }
+  };
+
+  const submitAbsences = async () => {
+    if (!absSeance?.id) return;
+    setAbsModalLoading(true);
+    setAbsModalError(null);
+    try {
+      const payload = {
+        absences: Array.from(absSelection).map((etudiantId) => ({
+          etudiantId,
+          justifiee: false,
+        })),
+      };
+      await bulkCreateAbsences(absSeance.id, payload);
+
+      const [stats, list] = await Promise.all([
+        getSeanceAbsencesCount(absSeance.id),
+        getSeanceAbsences(absSeance.id),
+      ]);
+      setAbsStats(stats || { total: 0, justifiees: 0, nonJustifiees: 0 });
+      setAbsList(Array.isArray(list) ? list : []);
+      setMessage('Absences enregistrées');
+    } catch (err) {
+      setAbsModalError(getErrorMessage(err, 'Échec d’enregistrement des absences'));
+    } finally {
+      setAbsModalLoading(false);
+    }
+  };
+
+  // ====== Rendu ======
   if (loading) return <div className="p-4 text-center">Chargement...</div>;
 
   return (
     <div className="space-y-6 bg-black bg-opacity-30 p-4 rounded-xl">
-      <div className="flex justify-between items-center ">
+      <div className="flex justify-between items-center">
         <h1 className="title text-white/90">Emploi du Temps par Classe</h1>
       </div>
 
@@ -497,7 +602,7 @@ export default function EmploiDuTempsTable() {
                       return (
                         <td
                           key={`${day}-${timeSlot}`}
-                          className="border align-top min-w-[200px] relative group p-0"
+                          className="border align-top min-w-[180px] relative group p-0"
                           rowSpan={mp.rowSpan}
                           onMouseEnter={(e) => e.currentTarget.classList.add('bg-gray-50')}
                           onMouseLeave={(e) => e.currentTarget.classList.remove('bg-gray-50')}
@@ -514,10 +619,53 @@ export default function EmploiDuTempsTable() {
                                 }`}
                               style={{ minHeight: `${SLOT_HEIGHT * mp.rowSpan}px` }}
                             >
-                              <div className="flex flex-col justify-center h-full">
-                                <div className="font-semibold">{seance.cours}</div>
+                              <div className="flex flex-col h-full">
+                                {/* Ligne titre + kebab */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="font-semibold">{seance.cours}</div>
+
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      className="px-2 py-1 rounded hover:bg-black/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAbsMenuSeanceId((prev) => (prev === seance.id ? null : seance.id));
+                                      }}
+                                      title="Actions de la séance"
+                                    >
+                                      ⋮
+                                    </button>
+
+                                    {absMenuSeanceId === seance.id && (
+                                      <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                        <button
+                                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                                          onClick={() => openAbsencesModal(seance)}
+                                        >
+                                          Marquer les absences
+                                        </button>
+                                        {isAdmin && (
+                                          <button
+                                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-red-700"
+                                            onClick={() => {
+                                              setAbsMenuSeanceId(null);
+                                              removeSeance(seance.id);
+                                            }}
+                                          >
+                                            Supprimer la séance
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Infos prof / salle */}
                                 <div className="text-gray-600">{seance.professeur}</div>
                                 <div className="text-gray-500">{seance.salle}</div>
+
+                                {/* Statut */}
                                 <div
                                   className={`text-xs mt-1 ${seance.statut === 'ANNULEE'
                                       ? 'text-red-600'
@@ -529,6 +677,8 @@ export default function EmploiDuTempsTable() {
                                   {seance.statut}
                                   {isMerged ? ' • (fusionné)' : ''}
                                 </div>
+
+                                {/* Bouton suppression en hover (optionnel, gardé) */}
                                 {isAdmin && (
                                   <button
                                     className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -563,6 +713,15 @@ export default function EmploiDuTempsTable() {
                 ))}
               </tbody>
             </table>
+
+            {user?.role === 'ROLE_ETUDIANT' && currentUserId && (
+              <button
+                className="btn btn-primary mt-4 bg-yellow-600 hover:bg-yellow-600"
+                onClick={() => downloadPdf(`/api/emploi-du-temps/etudiant/${currentUserId}/pdf`, 'Mon-EDT.pdf')}
+              >
+                Télécharger mon EDT (PDF)
+              </button>
+            )}
           </div>
 
           {/* Légende */}
@@ -603,11 +762,15 @@ export default function EmploiDuTempsTable() {
       {selectedClass && !edt && !loading && (
         <div className="card text-center py-8">
           <p className="text-gray-500 mb-6">Aucun emploi du temps trouvé pour cette classe.</p>
-          {isAdmin && <Link to="/gestion-edt" className="btn btn-primary mt-7">Créer un nouvel emploi du temps</Link>}
+          {isAdmin && (
+            <Link to="/gestion-edt" className="btn btn-primary mt-7">
+              Créer un nouvel emploi du temps
+            </Link>
+          )}
         </div>
       )}
 
-      {/* Modal d'ajout de séance */}
+      {/* Modal: Ajout de séance */}
       <Modal
         open={showAddSeanceModal}
         title="Ajouter une séance"
@@ -620,7 +783,7 @@ export default function EmploiDuTempsTable() {
         }}
       >
         <form onSubmit={addSeance} className="space-y-4">
-          {/* Section créneau sélectionné */}
+          {/* Créneau sélectionné + Dispo */}
           <div className="bg-blue-50 p-3 rounded-lg">
             <h4 className="font-semibold text-blue-800">Créneau sélectionné :</h4>
             <p className="text-blue-600">
@@ -636,7 +799,7 @@ export default function EmploiDuTempsTable() {
                   {availError ? ' (fallback local)' : ''}
                 </p>
 
-                {/* Liste des professeurs dispo (chips cliquables) */}
+                {/* Chips profs dispo */}
                 <div className="mt-2">
                   <div className="text-xs font-semibold text-gray-700 mb-1">Professeurs disponibles</div>
                   {sortedAvailableProfesseurs.length ? (
@@ -663,7 +826,7 @@ export default function EmploiDuTempsTable() {
                   )}
                 </div>
 
-                {/* Liste des salles dispo (chips cliquables) */}
+                {/* Chips salles dispo */}
                 <div className="mt-3">
                   <div className="text-xs font-semibold text-gray-700 mb-1">Salles disponibles</div>
                   {sortedAvailableSalles.length ? (
@@ -728,7 +891,7 @@ export default function EmploiDuTempsTable() {
               </div>
             )}
 
-          {/* En mode NEW: listes filtrées par dispo - ORGANISÉ EN GRID 2 COLONNES */}
+          {/* Formulaire (mode NEW) */}
           {duplicateChoice === 'new' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
@@ -853,7 +1016,7 @@ export default function EmploiDuTempsTable() {
             </div>
           )}
 
-          {/* Boutons d'action */}
+          {/* Actions */}
           <div className="flex gap-2 pt-4 border-t border-gray-200">
             <button
               type="submit"
@@ -881,6 +1044,23 @@ export default function EmploiDuTempsTable() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal Absences */}
+      <AttendanceModal
+        open={absModalOpen}
+        onClose={() => {
+          setAbsModalOpen(false);
+          setAbsModalError(null);
+        }}
+        seance={absSeance}
+        stats={absStats}
+        etudiants={etudiantsClasse}
+        selection={absSelection}
+        onToggle={toggleStudentInSelection}
+        onSubmit={submitAbsences}
+        loading={absModalLoading}
+        error={absModalError}
+      />
     </div>
   );
 }

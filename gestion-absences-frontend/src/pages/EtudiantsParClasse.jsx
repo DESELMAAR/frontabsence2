@@ -46,7 +46,7 @@ export default function EtudiantsParClasse() {
                 return (
                     <div
                         key={classe.id}
-                        className={`mb-8 rounded-lg shadow-md  bg-white  ring-2 `}
+                        className={`mb-8 rounded-lg shadow-md w-3/5 max-lg:w-full bg-white  ring-2 `}
                     >
                         <h2
                             className={`text-lg font-semibold text-green-800  px-4 py-2 rounded-t-lg`}

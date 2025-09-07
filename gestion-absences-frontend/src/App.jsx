@@ -1,71 +1,82 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { useAuth } from './contexts/AuthContext'
-import Navbar from './components/Navbar'
+import { useAuth } from "./contexts/AuthContext";
+import Navbar from "./components/Navbar";
 
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import CrudPage from './pages/CrudPage'
-import EmploiDuTemps from './pages/EmploiDuTemps'
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import CrudPage from "./pages/CrudPage";
+import EmploiDuTemps from "./pages/EmploiDuTemps";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EtudiantsParClasse from "./pages/EtudiantsParClasse";
-import GestionManuelleEDT from './pages/GestionManuelleEDT'
-import EmploiDuTempsTable from './pages/EmploiDuTempsTable'
-import entitiesConfig from './config/entities'
+import GestionManuelleEDT from "./pages/GestionManuelleEDT";
+import EmploiDuTempsTable from "./pages/EmploiDuTempsTable";
+import entitiesConfig from "./config/entities";
 
-import api from './services/api'
-import bgFallback from './assets/24.png'  // fallback local
+import api from "./services/api";
+import bgFallback from "./assets/24.png"; // fallback local
 
 function Protected({ children }) {
-  const { token } = useAuth()
-  if (!token) return <Navigate to="/login" replace />
-  return children
+  const { token } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
 }
 
 export default function App() {
-  const [bgUrl, setBgUrl] = useState(localStorage.getItem('app:bgUrl') || '')
+  const [bgUrl, setBgUrl] = useState(localStorage.getItem("app:bgUrl") || "");
 
-  // Load background URL once (fallback to local png)
+  const toAbsolute = (u) =>
+    !u ? "" : /^https?:\/\//i.test(u) ? u : `http://localhost:8080${u}`;
+
+  // Load background URL (si pas encore connu)
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     if (!bgUrl) {
-      api.get('/api/settings/background')
+      api
+        .get("/api/settings/background")
         .then(({ data }) => {
-          if (!mounted) return
+          if (!mounted) return;
           if (data?.url) {
-            setBgUrl(data.url)
-            localStorage.setItem('app:bgUrl', data.url)
+            setBgUrl(data.url);
+            localStorage.setItem("app:bgUrl", data.url);
           }
         })
-        .catch(() => { /* ignore */ })
+        .catch(() => {});
     }
-    return () => { mounted = false }
-  }, [bgUrl])
+    return () => {
+      mounted = false;
+    };
+  }, [bgUrl]);
 
-  // React to background changes done in GuideLeftSide (upload/reset)
+  // Écoute des changements cross-tab ET même onglet (custom event)
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === 'app:bgUrl') {
-        setBgUrl(e.newValue || '')
-      }
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+      if (e.key === "app:bgUrl") setBgUrl(e.newValue || "");
+    };
+    const onBgUpdated = (e) => {
+      setBgUrl(e.detail || localStorage.getItem("app:bgUrl") || "");
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("bg:updated", onBgUpdated);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("bg:updated", onBgUpdated);
+    };
+  }, []);
 
-  const resolvedBg = bgUrl || bgFallback
+  const finalBgUrl = bgUrl ? toAbsolute(bgUrl) : bgFallback;
 
   return (
     <div className="relative min-h-screen">
       {/* Fixed background layer */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed bg-no-repeat"
-        style={{ backgroundImage: `url(http://localhost:8080/.${resolvedBg})` }}
+        style={{ backgroundImage: `url(${finalBgUrl})` }}
       />
       {/* Soft overlay for readability */}
-      <div className="fixed inset-0 -z-10 bg-white/20 " />
+      <div className="fixed inset-0 -z-10 bg-white/20" />
 
-      <Navbar/>
+      <Navbar />
 
       <div className="mx-auto p-4 mt-4">
         <Routes>
@@ -113,10 +124,9 @@ export default function App() {
             }
           />
 
-          {/* Remove duplicate route; keep a single one */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </div>
-  )
+  );
 }
