@@ -149,7 +149,7 @@ export default function GuideLeftSide() {
     setBrandLoading(true);
     try {
       const payload = { shortCode: brandCode.trim(), title: brandTitle.trim() };
-      await api.post("/api/settings/branding", payload);
+      await api.put("/api/settings/branding", payload);
       setBrandMsg("Branding mis à jour ✅");
       broadcastBrand(payload.shortCode, payload.title);
     } catch (e) {
@@ -171,7 +171,7 @@ export default function GuideLeftSide() {
       setBrandCode(defaults.shortCode);
       setBrandTitle(defaults.title);
       // Option: ping POST pour enregistrer les valeurs par défaut
-      try { await api.post("/api/settings/branding", defaults); } catch {}
+      try { await api.put("/api/settings/branding", defaults); } catch {}
       setBrandMsg("Branding réinitialisé.");
       broadcastBrand(defaults.shortCode, defaults.title);
     } catch {

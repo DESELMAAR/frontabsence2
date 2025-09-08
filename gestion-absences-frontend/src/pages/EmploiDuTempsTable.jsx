@@ -574,8 +574,8 @@ export default function EmploiDuTempsTable() {
           </div>
 
           {/* Tableau EDT */}
-          <div className="card overflow-auto">
-            <table className="min-w-full border-collapse table-fixed">
+          <div className="card overflow-auto ">
+            <table className="min-w-full border-collapse table-fixed ">
               <thead>
                 <tr>
                   <th className="p-3 border bg-gray-100 font-semibold">Créneau / Jour</th>
