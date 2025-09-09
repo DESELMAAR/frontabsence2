@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   if (isStudent) {
     return (
-      <div className="bg-green-900 bg-opacity-90 backdrop-blur-sm p-6 rounded-xl max-w-3xl mx-auto text-center">
+      <div className="bg-sky-900 bg-opacity-90 backdrop-blur-sm p-6 rounded-xl max-w-3xl mx-auto text-center">
         <h1 className="text-2xl sm:text-3xl font-bold text-white">
           Bienvenue{user?.nomComplet ? `, ${user.nomComplet}` : ''} !
         </h1>
