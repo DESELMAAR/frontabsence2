@@ -15,6 +15,7 @@ import entitiesConfig from "./config/entities";
 
 import api from "./services/api";
 import bgFallback from "./assets/24.png"; // fallback local
+import Absences from "./pages/Absences";
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -41,7 +42,7 @@ export default function App() {
             localStorage.setItem("app:bgUrl", data.url);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
     return () => {
       mounted = false;
@@ -123,7 +124,14 @@ export default function App() {
               </Protected>
             }
           />
-
+          <Route
+            path="/absences"
+            element={
+              <Protected>
+                <Absences />  
+              </Protected>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

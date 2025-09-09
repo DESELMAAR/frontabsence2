@@ -107,17 +107,18 @@ export default function Navbar() {
     return () => { mounted = false }
   }, [])
 
+  // Écoute mise à jour branding (même onglet)
   useEffect(() => {
-  const onBrandUpdated = (e) => {
-    const { shortCode, title } = e.detail || {}
-    setBrand({
-      shortCode: shortCode || localStorage.getItem('app:brandCode') || 'GA',
-      title: title || localStorage.getItem('app:brandTitle') || 'Gestion Absences',
-    })
-  }
-  window.addEventListener('brand:updated', onBrandUpdated)
-  return () => window.removeEventListener('brand:updated', onBrandUpdated)
-}, [])
+    const onBrandUpdated = (e) => {
+      const { shortCode, title } = e.detail || {}
+      setBrand({
+        shortCode: shortCode || localStorage.getItem('app:brandCode') || 'GA',
+        title: title || localStorage.getItem('app:brandTitle') || 'Gestion Absences',
+      })
+    }
+    window.addEventListener('brand:updated', onBrandUpdated)
+    return () => window.removeEventListener('brand:updated', onBrandUpdated)
+  }, [])
 
   // Se synchroniser si branding change dans un autre onglet
   useEffect(() => {
@@ -185,19 +186,25 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           {token ? (
             <div className="hidden md:flex items-center gap-1">
-              {/* Admin/Prof : menus complets */}
+              {/* Admin/Prof : menus complets + Absences */}
               {isAdminOrProf && (
                 <>
                   <DropdownMenu title="Gestion" items={gestionItems} scrolled={scrolled} />
                   <DropdownMenu title="Emploi du Temps" items={edtItems} scrolled={scrolled} />
+                  <NavItem to="/absences" scrolled={scrolled}>Absences</NavItem>
                 </>
               )}
 
-              {/* Étudiant : uniquement Visualisation EDT */}
+              {/* Étudiant : Visualisation EDT + Mes absences */}
               {isStudent && (
-                <NavItem to="/emploi-du-temps-table" scrolled={scrolled}>
-                  Visualisation EDT
-                </NavItem>
+                <>
+                  <NavItem to="/emploi-du-temps-table" scrolled={scrolled}>
+                    Visualisation EDT
+                  </NavItem>
+                  <NavItem to="/absences" scrolled={scrolled}>
+                    Mes absences
+                  </NavItem>
+                </>
               )}
 
               {/* User info and logout */}
@@ -257,7 +264,7 @@ export default function Navbar() {
             <div className="space-y-2">
               {token ? (
                 <>
-                  {/* Admin/Prof : menus complets */}
+                  {/* Admin/Prof : menus complets + Absences */}
                   {isAdminOrProf && (
                     <>
                       <div className="px-3 py-2 font-bold text-slate-500 text-xs uppercase">Gestion</div>
@@ -283,18 +290,35 @@ export default function Navbar() {
                           {item.label}
                         </NavLink>
                       ))}
+
+                      <NavLink
+                        to="/absences"
+                        className="block px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors font-bold mt-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Absences
+                      </NavLink>
                     </>
                   )}
 
-                  {/* Étudiant : uniquement Visualisation EDT */}
+                  {/* Étudiant : Visualisation EDT + Mes absences */}
                   {isStudent && (
-                    <NavLink
-                      to="/emploi-du-temps-table"
-                      className="block px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors font-bold"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Visualisation EDT
-                    </NavLink>
+                    <>
+                      <NavLink
+                        to="/emploi-du-temps-table"
+                        className="block px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors font-bold"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Visualisation EDT
+                      </NavLink>
+                      <NavLink
+                        to="/absences"
+                        className="block px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors font-bold"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Mes absences
+                      </NavLink>
+                    </>
                   )}
 
                   <div className="border-t border-slate-200 mt-4 pt-4">
