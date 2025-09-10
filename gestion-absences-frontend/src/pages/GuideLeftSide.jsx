@@ -272,10 +272,10 @@ export default function GuideLeftSide() {
               </div>
             )}
 
-            <p className="mt-3 text-[11px] text-slate-500">
+            {/* <p className="mt-3 text-[11px] text-slate-500">
               Astuce : le layout global écoute <code>bg:updated</code> et lit{" "}
               <code className="bg-slate-100 px-1 rounded">localStorage.getItem("app:bgUrl")</code>.
-            </p>
+            </p> */}
           </div>
 
           {/* ====== Branding (Navbar) ====== */}
@@ -342,12 +342,12 @@ export default function GuideLeftSide() {
               </div>
             )}
 
-            <p className="mt-3 text-[11px] text-slate-500">
+            {/* <p className="mt-3 text-[11px] text-slate-500">
               La <code>Navbar</code> lit <code>GET /api/settings/branding</code> et/ou{" "}
               <code>localStorage</code>. Ce panneau déclenche{" "}
               <code>brand:updated</code> et met à jour{" "}
               <code>app:brandCode</code> / <code>app:brandTitle</code>.
-            </p>
+            </p> */}
           </div>
         </>
       )}

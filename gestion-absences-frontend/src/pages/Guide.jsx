@@ -27,7 +27,7 @@ export default function Guide() {
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-slate-800">
-            Créer des <span className="text-indigo-700">filières</span> puis des <span className="text-indigo-700">classes</span>
+            Créer des  <span className="text-indigo-700">classes</span>
           </h3>
           <p className="mt-1 text-slate-600">
             Commencez par définir l’organisation pédagogique : créez d’abord les <strong>filières</strong>, puis les <strong>classes</strong> rattachées à chaque filière.
