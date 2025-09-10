@@ -97,7 +97,7 @@ export default function Guide() {
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">Menu → Professeurs → Nouvel utilisateur</span>
-            <span className="rounded-full bg-green-50 px-3 py-1 text-xs text-green-700 border border-green-200">Conseil : activez uniquement les comptes utilisés</span>
+            {/* <span className="rounded-full bg-green-50 px-3 py-1 text-xs text-green-700 border border-green-200">Conseil : activez uniquement les comptes utilisés</span> */}
           </div>
         </div>
       </li>
@@ -116,7 +116,7 @@ export default function Guide() {
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">Menu → Salles → Nouvelle salle</span>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700 border border-amber-200">Astuce : renseignez la capacité pour éviter la sur-occupation</span>
+            {/* <span className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700 border border-amber-200">Astuce : renseignez la capacité pour éviter la sur-occupation</span> */}
           </div>
         </div>
       </li>
