@@ -49,8 +49,10 @@ export default function EtudiantsParClasse() {
   };
 
   return (
-    <div className="bg-black rounded-xl p-4 bg-opacity-30">
-      <h1 className="text-2xl text-white/90 font-bold mb-6">Étudiants par classe</h1>
+    <div className="bg-black/40 rounded-2xl p-6 shadow-lg">
+      <h1 className="text-3xl font-bold text-white/90 mb-8 tracking-wide">
+        Étudiants par classe
+      </h1>
 
       {classes.map((classe, index) => {
         const color = colors[index % colors.length];
@@ -63,18 +65,18 @@ export default function EtudiantsParClasse() {
         return (
           <div
             key={id}
-            className="mb-4 rounded-lg shadow-md w-3/5 max-lg:w-full bg-white ring-2"
+            className="mb-6 rounded-xl overflow-hidden bg-white shadow-md border border-slate-200 hover:shadow-xl transition-all duration-300"
           >
-            {/* En-tête avec bouton + / - */}
+            {/* En-tête avec bouton toggle */}
             <div
-              className={`flex items-center justify-between px-4 py-2 rounded-t-lg bg-${color}-50`}
+              className={`flex items-center justify-between px-5 py-3 bg-${color}-100 border-b border-${color}-200`}
             >
-              <h2 className="text-lg font-semibold text-green-800">
+              <h2 className="text-lg font-semibold text-slate-800">
                 Classe: {classe.niveau} ({classe.nom})
               </h2>
               <button
                 onClick={() => toggleClasse(classe)}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold"
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm transition"
                 aria-expanded={isOpen}
                 aria-controls={`classe-${id}-panel`}
                 title={isOpen ? "Masquer" : "Afficher"}
@@ -83,59 +85,66 @@ export default function EtudiantsParClasse() {
               </button>
             </div>
 
-            {/* Contenu dépliable */}
-            {isOpen && (
-              <div id={`classe-${id}-panel`} className="border-t">
-                {isLoading ? (
-                  <div className="p-4 text-sm text-slate-600">Chargement…</div>
-                ) : err ? (
-                  <div className="p-4 text-sm text-red-700 bg-red-50 border-y border-red-200">
-                    {err}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50">
-                          <th className="p-2 border">ID</th>
-                          <th className="p-2 border">Nom</th>
-                          <th className="p-2 border">Prénom</th>
-                          <th className="p-2 border">Email</th>
-                          <th className="p-2 border">Adresse</th>
-                          <th className="p-2 border">Matricule</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {etudiants.length > 0 ? (
-                          etudiants.map((etudiant) => (
-                            <tr key={etudiant.id} className="hover:bg-gray-50">
-                              <td className="p-2 border">{etudiant.id}</td>
-                              <td className="p-2 border">{etudiant.nom}</td>
-                              <td className="p-2 border">{etudiant.prenom}</td>
-                              <td className="p-2 border">{etudiant.email}</td>
-                              <td className="p-2 border">{etudiant.address}</td>
-                              <td className="p-2 border">{etudiant.matricule}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={6}
-                              className="p-3 border text-center text-gray-500"
-                            >
-                              Aucun étudiant
-                            </td>
+            {/* Contenu dépliable avec animation */}
+            <div
+              id={`classe-${id}-panel`}
+              className={`transition-all duration-500 ease-in-out ${isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                } overflow-hidden`}
+            >
+              {isLoading ? (
+                <div className="p-4 text-sm text-slate-600">Chargement…</div>
+              ) : err ? (
+                <div className="p-4 text-sm text-red-700 bg-red-50 border-y border-red-200">
+                  {err}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-700">
+                        <th className="p-3 border text-sm font-medium">ID</th>
+                        <th className="p-3 border text-sm font-medium">Nom</th>
+                        <th className="p-3 border text-sm font-medium">Prénom</th>
+                        <th className="p-3 border text-sm font-medium">Email</th>
+                        <th className="p-3 border text-sm font-medium">Adresse</th>
+                        <th className="p-3 border text-sm font-medium">Matricule</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {etudiants.length > 0 ? (
+                        etudiants.map((etudiant, i) => (
+                          <tr
+                            key={etudiant.id}
+                            className={`${i % 2 === 0 ? "bg-white" : "bg-slate-50"
+                              } hover:bg-green-50 transition`}
+                          >
+                            <td className="p-3 border text-sm">{etudiant.id}</td>
+                            <td className="p-3 border text-sm">{etudiant.nom}</td>
+                            <td className="p-3 border text-sm">{etudiant.prenom}</td>
+                            <td className="p-3 border text-sm">{etudiant.email}</td>
+                            <td className="p-3 border text-sm">{etudiant.address}</td>
+                            <td className="p-3 border text-sm">{etudiant.matricule}</td>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="p-4 border text-center text-gray-500 italic"
+                          >
+                            Aucun étudiant inscrit
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         );
       })}
     </div>
+
   );
 }

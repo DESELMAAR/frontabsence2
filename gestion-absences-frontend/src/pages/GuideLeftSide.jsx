@@ -183,17 +183,17 @@ export default function GuideLeftSide() {
 
   /* ====================== UI ====================== */
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-opacity-70 backdrop-blur-md bg-white p-6 shadow-sm">
       
 
       <div className="mt-4 space-y-2 text-sm">
         <a className="block rounded-lg border bg-indigo-600 text-white hover:bg-indigo-700 border-slate-200 px-3 py-2 " href="/classes">
           Créer une classe
         </a>
-        <a className="block rounded-lg border bg-indigo-600 text-white hover:bg-indigo-700 border-slate-200 px-3 py-2 hover:bg-slate-50" href="/etudiants">
+        <a className="block rounded-lg border bg-indigo-600 text-white  hover:bg-indigo-700 border-slate-200 px-3 py-2 " href="/etudiants">
           Importer des étudiants
         </a>
-        <a className="block rounded-lg border bg-indigo-600 text-white hover:bg-indigo-700 border-slate-200 px-3 py-2 hover:bg-slate-50" href="/cours">
+        <a className="block rounded-lg border bg-indigo-600 text-white  hover:bg-indigo-700 border-slate-200 px-3 py-2 " href="/cours">
           Nouveau cours
         </a>
       </div>
@@ -201,7 +201,7 @@ export default function GuideLeftSide() {
       {isAdmin && (
         <>
           {/* ====== Background ====== */}
-          <div className="mt-6 rounded-xl border border-slate-200 p-4">
+          <div className="mt-6 rounded-xl   p-4">
             <h4 className="font-semibold text-slate-800">Background de l’application</h4>
 
             <div className="mt-3">
@@ -276,7 +276,7 @@ export default function GuideLeftSide() {
           </div>
 
           {/* ====== Branding (Navbar) ====== */}
-          <div className="mt-6 rounded-xl border border-slate-200 p-4">
+          <div className="mt-6 rounded-xl  p-4">
             <h4 className="font-semibold text-slate-800">Branding de la barre de navigation</h4>
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -23,10 +23,10 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-12 card">
+    <div className="max-w-md mx-auto mt-12 card ">
       <h1 className="title mb-4">Connexion</h1>
-      {error && <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl mb-3">{error}</div>}
-      <form className="space-y-3" onSubmit={onSubmit}>
+      {error && <div className="p-3 bg-red-50  border border-red-200 text-red-800 rounded-xl mb-3">{error}</div>}
+      <form className="space-y-3 " onSubmit={onSubmit}>
         <div>
           <label className="label">Login</label>
           <input className="input" value={form.login} onChange={e=>setForm({...form,login:e.target.value})} />
