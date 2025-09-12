@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import React from "react";
 import GuideLeftSide from './GuideLeftSide';
+import logo from '../assets/1.svg'
 
 export default function Guide() {
     return (
@@ -10,7 +11,7 @@ export default function Guide() {
     {/* Header */}
     <div className="mb-6 rounded-xl bg-gradient-to-r from-indigo-50 via-sky-50 to-teal-50 p-5 border border-slate-100">
       <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white text-lg">ℹ️</span>
+        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full"><img src={logo} alt="" /></span>
         Guide d’utilisation — Gestion des absences &amp; EDT
       </h2>
       <p className="mt-2 text-slate-600">

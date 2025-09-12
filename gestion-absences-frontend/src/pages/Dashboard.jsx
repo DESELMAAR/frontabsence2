@@ -4,15 +4,22 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Guide from "./Guide";
 import { downloadPdf } from "../services/api";
+import iconetudiant from "../assets/icons/etudiants.svg"
+import iconclasses from "../assets/icons/classes.svg"
+import iconcours from "../assets/icons/cours.svg"
+import iconmatieres from "../assets/icons/matieres.svg"
+import iconprofessor from "../assets/icons/professor.svg"
+import iconsalles from "../assets/icons/salles.svg"
+import iconseance from "../assets/icons/seance.svg"
 
 const cards = [
-  { to: "/etudiants", label: "Étudiants", desc: "Gérer les étudiants" },
-  { to: "/professeurs", label: "Professeurs", desc: "Gérer les professeurs" },
-  { to: "/classes", label: "Classes", desc: "Créer et modifier des classes" },
-  { to: "/matieres", label: "Matières", desc: "Gérer les matières" },
-  { to: "/salles", label: "Salles", desc: "Gérer les salles" },
-  { to: "/cours", label: "Cours", desc: "Gérer les cours" },
-  { to: "/seances", label: "Séances", desc: "Planifier les séances" },
+  { to: "/etudiants", label: "Étudiants", desc: "Gérer les étudiants" ,icon:`${iconetudiant}`},
+  { to: "/professeurs", label: "Professeurs", desc: "Gérer les professeurs" ,icon:`${iconprofessor}`},
+  { to: "/classes", label: "Classes", desc: "Créer et modifier des classes",icon:`${iconclasses}` },
+  { to: "/matieres", label: "Matières", desc: "Gérer les matières" ,icon:`${iconmatieres}`},
+  { to: "/salles", label: "Salles", desc: "Gérer les salles" ,icon:`${iconsalles}`},
+  { to: "/cours", label: "Cours", desc: "Gérer les cours",icon:`${iconcours}`},
+  { to: "/seances", label: "Séances", desc: "Planifier les séances" ,icon:`${iconseance}`},
 ];
 
 // Petit helper pour extraire userId du JWT si besoin
@@ -129,9 +136,13 @@ export default function Dashboard() {
       className="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-lg hover:border-green-500 transition-all duration-300"
     >
       <div className="flex items-center justify-between">
-        <div className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition">
-          {c.label}
-        </div>
+       <div className="flex items-center gap-x-2 text-lg font-semibold text-gray-800 group-hover:text-green-600 transition">
+  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full">
+    <img src={c.icon} alt="" className="h-9 w-9" />
+  </span>
+  <span>{c.label}</span>
+</div>
+
         {/* optional placeholder for icon */}
         <div className="text-green-500 opacity-70 group-hover:opacity-100 transition">
           ➜
