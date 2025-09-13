@@ -137,8 +137,8 @@ export default function Dashboard() {
     >
       <div className="flex items-center justify-between">
        <div className="flex items-center gap-x-2 text-lg font-semibold text-gray-800 group-hover:text-green-600 transition">
-  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full">
-    <img src={c.icon} alt="" className="h-9 w-9" />
+  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full">
+    <img src={c.icon} alt="" className="h-12 w-12" />
   </span>
   <span>{c.label}</span>
 </div>

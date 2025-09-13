@@ -191,7 +191,7 @@ export default function GuideLeftSide() {
           Créer une classe
         </a>
         <a className="block rounded-lg border bg-indigo-600 text-white  hover:bg-indigo-700 border-slate-200 px-3 py-2 " href="/etudiants">
-          Importer des étudiants
+          Ajouter des étudiants
         </a>
         <a className="block rounded-lg border bg-indigo-600 text-white  hover:bg-indigo-700 border-slate-200 px-3 py-2 " href="/cours">
           Nouveau cours
